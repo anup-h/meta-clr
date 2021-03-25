@@ -1,5 +1,5 @@
 # meta-clr
-
+Create vitualenv, run pip install -r requirements.txt
 Create folders in the main repo named:
 - youtube8m_flow
 - youtube8m_rgb
