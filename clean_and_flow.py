@@ -6,6 +6,7 @@ import numpy as np
 import multiprocessing
 import json
 
+
 raw_root = "youtube8m_rgb_raw/"
 flow_root = "youtube8m_flow/"
 clean_root = "youtube8m_rgb/"
