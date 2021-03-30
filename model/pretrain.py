@@ -81,8 +81,6 @@ class InfoNCE(nn.Module):
 
     @torch.no_grad()
     def _dequeue_and_enqueue(self, keys):
-        # gather keys before updating queue
-        keys = concat_all_gather(keys)
 
         batch_size = keys.shape[0]
 
@@ -99,48 +97,25 @@ class InfoNCE(nn.Module):
     def _batch_shuffle_ddp(self, x):
         '''
         Batch shuffle, for making use of BatchNorm.
-        *** Only support DistributedDataParallel (DDP) model. ***
         '''
         # gather from all gpus
-        batch_size_this = x.shape[0]
-        x_gather = concat_all_gather(x)
-        batch_size_all = x_gather.shape[0]
-
-        num_gpus = batch_size_all // batch_size_this
+        batch_size = x.shape[0]
 
         # random shuffle index
-        idx_shuffle = torch.randperm(batch_size_all).cuda()
-
-        # broadcast to all gpus
-        torch.distributed.broadcast(idx_shuffle, src=0)
+        idx_shuffle = torch.randperm(batch_size)
 
         # index for restoring
         idx_unshuffle = torch.argsort(idx_shuffle)
 
-        # shuffled index for this gpu
-        gpu_idx = torch.distributed.get_rank()
-        idx_this = idx_shuffle.view(num_gpus, -1)[gpu_idx]
-
-        return x_gather[idx_this], idx_unshuffle
+        return x[idx_shuffle], idx_unshuffle
 
     @torch.no_grad()
     def _batch_unshuffle_ddp(self, x, idx_unshuffle):
         '''
         Undo batch shuffle.
-        *** Only support DistributedDataParallel (DDP) model. ***
         '''
-        # gather from all gpus
-        batch_size_this = x.shape[0]
-        x_gather = concat_all_gather(x)
-        batch_size_all = x_gather.shape[0]
 
-        num_gpus = batch_size_all // batch_size_this
-
-        # restored index for this gpu
-        gpu_idx = torch.distributed.get_rank()
-        idx_this = idx_unshuffle.view(num_gpus, -1)[gpu_idx]
-
-        return x_gather[idx_this]
+        return x[idx_unshuffle]
 
     def forward(self, block):
         '''Output: logits, targets'''
@@ -182,7 +157,7 @@ class InfoNCE(nn.Module):
         logits /= self.T
 
         # labels: positive key indicators
-        labels = torch.zeros(logits.shape[0], dtype=torch.long).cuda()
+        labels = torch.zeros(logits.shape[0], dtype=torch.long)
         
         # dequeue and enqueue
         if in_train_mode: self._dequeue_and_enqueue(k)
