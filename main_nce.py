@@ -148,6 +148,8 @@ def parse_args():
                         help='moco momentum of updating key encoder (default: 0.999)')
     parser.add_argument('--moco-t', default=0.07, type=float,
                         help='softmax temperature (default: 0.07)')
+    parser.add_argument('--cos', action='store_true', 
+                        help='use cosine lr schedule')
     args = parser.parse_args()
     return args
 
