@@ -11,18 +11,18 @@ from backbone.select_backbone import select_backbone
 
 
 # utils
-@torch.no_grad()
-def concat_all_gather(tensor):
-    """
-    Performs all_gather operation on the provided tensors.
-    *** Warning ***: torch.distributed.all_gather has no gradient.
-    """
-    tensors_gather = [torch.ones_like(tensor)
-        for _ in range(torch.distributed.get_world_size())]
-    torch.distributed.all_gather(tensors_gather, tensor, async_op=False)
+# @torch.no_grad()
+# def concat_all_gather(tensor):
+#     """
+#     Performs all_gather operation on the provided tensors.
+#     *** Warning ***: torch.distributed.all_gather has no gradient.
+#     """
+#     tensors_gather = [torch.ones_like(tensor)
+#         for _ in range(torch.distributed.get_world_size())]
+#     torch.distributed.all_gather(tensors_gather, tensor, async_op=False)
 
-    output = torch.cat(tensors_gather, dim=0)
-    return output
+#     output = torch.cat(tensors_gather, dim=0)
+#     return output
 
 
 class InfoNCE(nn.Module):
@@ -186,7 +186,7 @@ class UberNCE(InfoNCE):
     @torch.no_grad()
     def _dequeue_and_enqueue(self, keys, labels):
         # gather keys before updating queue
-        keys = concat_all_gather(keys)
+        #keys = concat_all_gather(keys)
         labels = concat_all_gather(labels)
 
         batch_size = keys.shape[0]
@@ -296,9 +296,9 @@ class CoCLR(InfoNCE):
     @torch.no_grad()
     def _dequeue_and_enqueue(self, keys, keys_second, vnames):
         # gather keys before updating queue
-        keys = concat_all_gather(keys)
-        keys_second = concat_all_gather(keys_second)
-        vnames = concat_all_gather(vnames)
+        #keys = concat_all_gather(keys)
+        #keys_second = concat_all_gather(keys_second)
+        # vnames = concat_all_gather(vnames)
         # labels = concat_all_gather(labels)
 
         batch_size = keys.shape[0]

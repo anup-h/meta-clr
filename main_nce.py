@@ -1,7 +1,7 @@
 import argparse
 from model.pretrain import InfoNCE, UberNCE
 import utils.augmentation as A
-from dataset import YT8M_RGB, YT8M_Flow
+from dataset import YT8M_Single_Modality
 from torchvision import transforms
 from torch.utils import data 
 from utils.utils import AverageMeter, write_log, calc_topk_accuracy, calc_mask_accuracy, batch_denorm, ProgressMeter, neq_load_customized, save_checkpoint, Logger, FastDataLoader
@@ -9,12 +9,14 @@ import torch.nn as nn
 import utils.transforms as T
 import torch.optim as optim
 from tqdm import tqdm 
+from torch.utils.tensorboard import SummaryWriter
 
 
 def main(args):
+    logger = SummaryWriter()
     model = InfoNCE(args.net, args.moco_dim, args.moco_k, args.moco_m, args.moco_t)
     transform = get_transform(args)
-    ds = YT8M_RGB(transform, 'youtube8m_rgb/', 32)
+    ds = YT8M_Single_Modality('youtube8m_rgb/', 32, transform)
     
     print(ds[0].shape)
     params = []
@@ -26,9 +28,17 @@ def main(args):
     transform_train_cuda = transforms.Compose([
         T.Normalize(mean=[0.485, 0.456, 0.406],
                     std=[0.229, 0.224, 0.225], channel=1)])
-    train_one_epoch(dl, model, criterion, optimizer, transform_train_cuda, 1, args)
     
-def train_one_epoch(data_loader, model, criterion, optimizer, transforms_cuda, epoch, args):
+    for ep in range(100):
+        print('epoch', ep)
+        train_one_epoch(dl, model, criterion, optimizer, transform_train_cuda, 1, args, logger)
+        save_dict = {
+            'epoch': ep,
+            'state_dict': model.state_dict(),
+            'optimizer': optimizer.state_dict(),
+            'iteration': args.iteration}
+    
+def train_one_epoch(data_loader, model, criterion, optimizer, transforms_cuda, epoch, args, logger):
 
     model.train() 
 
@@ -53,8 +63,8 @@ def train_one_epoch(data_loader, model, criterion, optimizer, transforms_cuda, e
         loss.backward()
         optimizer.step()
         
-        print(loss.item())
-
+        writer.add_scalar('Loss/train', loss.item(), n_iter)
+        args.iteration+=1
 #         batch_time.update(time.time() - end)
 #         end = time.time()
         
@@ -74,8 +84,6 @@ def train_one_epoch(data_loader, model, criterion, optimizer, transforms_cuda, e
 #         args.train_plotter.add_data('global/loss', losses.avg, epoch)
 #         args.train_plotter.add_data('global/top1', top1_meter.avg, epoch)
 #         args.train_plotter.add_data('global/top5', top5_meter.avg, epoch)
-
-#     return losses.avg, top1_meter.avg
 
 def get_dataloader(dataset, args):
     data_loader = FastDataLoader(
@@ -137,7 +145,7 @@ def parse_args():
     parser.add_argument('--name_prefix', default='', type=str)
     parser.add_argument('-j', '--workers', default=16, type=int)
     parser.add_argument('--seed', default=0, type=int)
-
+    parser.add_argument('--iteration', default=0, type=int)
 
     # moco specific configs:
     parser.add_argument('--moco-dim', default=128, type=int,
@@ -148,6 +156,8 @@ def parse_args():
                         help='moco momentum of updating key encoder (default: 0.999)')
     parser.add_argument('--moco-t', default=0.07, type=float,
                         help='softmax temperature (default: 0.07)')
+    parser.add_argument('--cos', action='store_true', 
+                        help='use cosine lr schedule')
     args = parser.parse_args()
     return args
 

@@ -1,0 +1,21 @@
+name: meta-clr
+channels:
+  - conda-forge
+  - pytorch
+  - anaconda
+dependencies:
+  - python=3.7
+  - tqdm
+  - tensorboardx
+  - youtube-dl
+  - requests
+  - pandas
+  - moviepy
+  - matplotlib
+  - conda-forge::cudatoolkit=11.1
+  - imageio
+  - imageio-ffmpeg
+  - opencv
+  - pytorch::pytorch
+  - pytorch::torchaudio
+  - pytorch::torchvision

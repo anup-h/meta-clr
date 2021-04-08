@@ -53,7 +53,7 @@ with open(METADATA_CSV_FILE, "r") as mtd:
     m = 0
     for cls, N, kg_id in zip(selected_categories, video_nums, kg_ids):
         m = m + 1
-        if(m>200):
+        if(m>100):
             break
         print(str(m) + '/3862')
         print("Fetching videos for '{}' category".format(cls))
@@ -65,7 +65,7 @@ with open(METADATA_CSV_FILE, "r") as mtd:
         tf_records_ids = js_data[2:]
         random.shuffle(tf_records_ids)
         tf_records_ids_first_two_chars = [i[:2] for i in tf_records_ids]
-        limit = 5
+        limit = 1
         print("There are " + str(limit) + " videos identified in this category")
         video_ids_list = []
         k = 0
