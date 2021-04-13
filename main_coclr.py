@@ -40,6 +40,7 @@ def main(args):
     args.num_seq = 2
         
     args.img_path, args.model_path, args.exp_path = set_path(args)
+    args.writer_train = SummaryWriter(logdir='runs')
 
     torch.cuda.set_device(args.gpu)
     model = model.cuda(args.gpu)
@@ -200,19 +201,18 @@ def train_one_epoch(data_loader, model, criterion, optimizer, transforms_cuda, e
         torch.cuda.empty_cache()
 #         if idx % args.print_freq == 0:
 #             progress.display(idx)
-#             args.train_plotter.add_data('local/loss', losses.local_avg, args.iteration)
-#             args.train_plotter.add_data('local/top1', top1_meter.local_avg, args.iteration)
-#             args.train_plotter.add_data('local/top5', top5_meter.local_avg, args.iteration)
-#             args.train_plotter.add_data('local/self-top1', top1_self_meter.local_avg, args.iteration)
-#             args.train_plotter.add_data('local/self-top5', top5_self_meter.local_avg, args.iteration)
+#             args.writer_train.add_scalar('local/loss', losses.local_avg, args.iteration)
+#             args.writer_train.add_scalar('local/top1', top1_meter.local_avg, args.iteration)
+#             args.writer_train.add_scalar('local/top5', top5_meter.local_avg, args.iteration)
+#             args.writer_train.add_scalar('local/self-top1', top1_self_meter.local_avg, args.iteration)
+#             args.writer_train.add_scalar('local/self-top5', top5_self_meter.local_avg, args.iteration)
         args.iteration += 1
-    print('(Epoch: [{0}][{1}/{2}]\t'
-          'T-epoch:{t:.2f}\t'.format(epoch, idx, len(data_loader), t=time.time()))
-#     args.train_plotter.add_data('global/loss', losses.avg, epoch)
-#     args.train_plotter.add_data('global/top1', top1_meter.avg, epoch)
-#     args.train_plotter.add_data('global/top5', top5_meter.avg, epoch)
-#     args.train_plotter.add_data('global/self-top1', top1_self_meter.avg, epoch)
-#     args.train_plotter.add_data('global/self-top5', top5_self_meter.avg, epoch)
+    print('(Epoch: [{0}][loss: {1} acc:{2}]\t'.format(epoch,losses.avg, top1_self_meter.avg))
+    args.writer_train.add_scalar('global/loss', losses.avg, epoch)
+    args.writer_train.add_scalar('global/top1', top1_meter.avg, epoch)
+    args.writer_train.add_scalar('global/top5', top5_meter.avg, epoch)
+    args.writer_train.add_scalar('global/self-top1', top1_self_meter.avg, epoch)
+    args.writer_train.add_scalar('global/self-top5', top5_self_meter.avg, epoch)
     return losses.avg, top1_meter.avg
 
 
@@ -224,6 +224,8 @@ def adjust_learning_rate(optimizer, epoch, args):
         lr *= 0.1 if epoch >= milestone else 1.
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
+        
+
 
 def get_transform(mode, args):
     seq_len = args.seq_len * 2 # for both rgb and flow
@@ -291,7 +293,7 @@ def parse_args():
     parser.add_argument('--resume', default='', type=str, help='path of model to resume')
     parser.add_argument('--pretrain', default=['random', 'random'], nargs=2, type=str, help='path of pretrained model: rgb, flow')
     parser.add_argument('--test', default='', type=str, help='path of model to load and pause')
-    parser.add_argument('--epochs', default=10, type=int, help='number of total epochs to run')
+    parser.add_argument('--epochs', default=100, type=int, help='number of total epochs to run')
     parser.add_argument('--start_epoch', default=0, type=int, help='manual epoch number (useful on restarts)')
     parser.add_argument('--gpu', default=0, type=int)
     parser.add_argument('--print_freq', default=5, type=int, help='frequency of printing output during training')
