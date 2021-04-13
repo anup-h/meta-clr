@@ -3,3 +3,4 @@ youtube8m_rgb/*
 youtube8m_rgb_raw/*
 env/*
 __pycache__/*
+durations.json

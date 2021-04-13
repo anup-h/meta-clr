@@ -10,26 +10,32 @@ import utils.transforms as T
 import torch.optim as optim
 from tqdm import tqdm 
 from torch.utils.tensorboard import SummaryWriter
+import torch
 
 
 def main(args):
+    print(torch.cuda.get_device_name(torch.cuda.current_device()))
+#     torch.cuda.clear_memory_allocated()
+    torch.cuda.empty_cache()
+    print(torch.cuda.memory_summary(device=0, abbreviated=False))
+    print(torch.cuda.list_gpu_processes(device=None))
     logger = SummaryWriter()
-    model = InfoNCE(args.net, args.moco_dim, args.moco_k, args.moco_m, args.moco_t)
+    model = InfoNCE(args.net, args.moco_dim, args.moco_k, args.moco_m, args.moco_t).cuda()
     transform = get_transform(args)
-    ds = YT8M_Single_Modality('youtube8m_rgb/', 32, transform)
+    ds = YT8M_Single_Modality('youtube8m_flow/', 32, transform)
     
     print(ds[0].shape)
     params = []
     for name, param in model.named_parameters():
         params.append({'params': param})
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss().cuda()
     optimizer = optim.Adam(params, lr=args.lr, weight_decay=args.wd)
     dl = get_dataloader(ds, args)
     transform_train_cuda = transforms.Compose([
         T.Normalize(mean=[0.485, 0.456, 0.406],
                     std=[0.229, 0.224, 0.225], channel=1)])
     
-    for ep in range(100):
+    for ep in range(100000):
         print('epoch', ep)
         train_one_epoch(dl, model, criterion, optimizer, transform_train_cuda, 1, args, logger)
         save_dict = {
@@ -37,6 +43,7 @@ def main(args):
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
             'iteration': args.iteration}
+        torch.save(save_dict, 'flow_nce/ckpt.pth.tar')
     
 def train_one_epoch(data_loader, model, criterion, optimizer, transforms_cuda, epoch, args, logger):
 
@@ -48,7 +55,7 @@ def train_one_epoch(data_loader, model, criterion, optimizer, transforms_cuda, e
 
     for idx, input_seq in tqdm(enumerate(data_loader), total=len(data_loader), disable=True):
         B = input_seq.size(0)
-        input_seq = tr(input_seq)
+        input_seq = tr(input_seq.cuda())
         
         output, target = model(input_seq)
         loss = criterion(output, target)
@@ -63,7 +70,7 @@ def train_one_epoch(data_loader, model, criterion, optimizer, transforms_cuda, e
         loss.backward()
         optimizer.step()
         
-        writer.add_scalar('Loss/train', loss.item(), n_iter)
+        logger.add_scalar('Loss/train', loss.item(), args.iteration)
         args.iteration+=1
 #         batch_time.update(time.time() - end)
 #         end = time.time()
@@ -127,7 +134,7 @@ def parse_args():
     parser.add_argument('--seq_len', default=32, type=int, help='number of frames in each video block')
     parser.add_argument('--num_seq', default=2, type=int, help='number of video blocks')
     parser.add_argument('--ds', default=1, type=int, help='frame down sampling rate')
-    parser.add_argument('--batch_size', default=32, type=int)
+    parser.add_argument('--batch_size', default=16, type=int)
     parser.add_argument('--lr', default=1e-3, type=float, help='learning rate')
     parser.add_argument('--schedule', default=[120, 160], nargs='*', type=int, help='learning rate schedule (when to drop lr by 10x)')
     parser.add_argument('--wd', default=1e-5, type=float, help='weight decay')

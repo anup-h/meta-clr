@@ -157,7 +157,7 @@ class InfoNCE(nn.Module):
         logits /= self.T
 
         # labels: positive key indicators
-        labels = torch.zeros(logits.shape[0], dtype=torch.long)
+        labels = torch.zeros(logits.shape[0], dtype=torch.long).cuda()
         
         # dequeue and enqueue
         if in_train_mode: self._dequeue_and_enqueue(k)

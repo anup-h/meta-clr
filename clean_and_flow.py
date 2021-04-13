@@ -24,9 +24,9 @@ def map_and_add_channels(flow, min_flow=-20, max_flow=20):
     return flow_3ch
 
 def worker_task(v):
-#     if (v[:-3]+"npy" in os.listdir(flow_root)):
-#         print("Skipping", v)
-#         return
+    if (v[:-3]+"npy" in os.listdir(flow_root)):
+        print("Skipping", v)
+        return
     clip = mp.VideoFileClip(raw_root+v, target_resolution=(128, None))
     clip = crop(clip, x_center = clip.w//2, y_center = clip.h//2, height = 128, width = 128)
     #clip.write_videofile(clean_root+v, logger=None, audio=False)
@@ -54,13 +54,13 @@ def worker_task(v):
     print("Finished flow for ", v)
     return v
 
-# pool = multiprocessing.Pool(processes=8)
-# pool.map(worker_task, vids)
+pool = multiprocessing.Pool(processes=8)
+pool.map(worker_task, vids)
 
 lendict = {}
 root = 'youtube8m_rgb/'
 for i, v in enumerate(os.listdir(root)):
     clip = np.load(root+v)#mp.VideoFileClip(root+v)
-    lendict[v[:-4]] = clip.size[0]
+    lendict[v[:-4]] = clip.shape[0]
 with open('durations.json', 'w') as f:
     json.dump(lendict, f)
