@@ -9,9 +9,9 @@ from torchvision import transforms
 import moviepy.editor as mp
 from PIL import Image
 
-# This Dataset can return either rgb frames or optical flow, depending on the root that's passed in
+# This Dataset can return either rgb frames or optical flow
 class YT8M_Single_Modality(torch.utils.data.Dataset):
-    def __init__(self, root, clip_length, transform, temp_aug=True):
+    def __init__(self, root, clip_length, transform, modality='rgb', temp_aug=True):
         self.root = root
         self.clip_length = clip_length
         self.transform = transform
@@ -32,7 +32,7 @@ class YT8M_Single_Modality(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         vid, start = self.clips[index]
-        rgb = np.load(self.root+vid+'.npy')
+        rgb = np.load(self.root+vid+'.npz')[modality]
         start1 = start
         start2 = start
         if self.temp_aug:
@@ -84,8 +84,9 @@ class YT8M_RGB_Flow(torch.utils.data.Dataset):
     
     def __getitem__(self, index):
         vid, l, instance_id = self.clips[index]
-        rgb = np.load(self.root_rgb+vid+'.npy')
-        flow = np.load(self.root_flow+vid+'.npy')
+        arr = np.load(self.root_rgb+vid+'.npz')
+        rgb = arr['rgb']
+        flow = arr['flow']
         seq_rgb, seq_flow = self.frame_sampler(l,rgb,flow)
         transform = self.transform
         seq = transform(seq_rgb[0:self.clip_length] + seq_flow[0:self.clip_length] \

@@ -1,6 +1,4 @@
 import os
-import moviepy.editor as mp
-from moviepy.video.fx.all import crop
 import cv2 as cv
 import numpy as np
 import multiprocessing
