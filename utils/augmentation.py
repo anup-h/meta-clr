@@ -7,7 +7,7 @@ from torchvision import transforms
 import torchvision.transforms.functional as F
 from PIL import ImageOps, Image, ImageFilter
 import numpy as np
-from joblib import Parallel, delayed
+#from joblib import Parallel, delayed
 
 
 class Padding:
@@ -399,7 +399,6 @@ class TwoClipTransform:
             tr2 = self.base
         else:
             tr2 = self.null
-
         q = tr1(x[0:self.seq_len])
         k = tr2(x[self.seq_len::])
         return q + k
@@ -426,7 +425,6 @@ class OneClipTransform:
             xx = x[0:self.seq_len]
         else:
             xx = x[self.seq_len::]
-
         q = tr1(xx)
         k = tr2(xx)
         return q + k
